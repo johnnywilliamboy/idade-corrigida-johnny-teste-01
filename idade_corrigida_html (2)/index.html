@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Idade Corrigida</title>
+  <link rel="icon" href="bebezinho.png" type="image/png" />
+  <style>
+    body { font-family: Arial; background: #f0f8ff; max-width: 600px; margin: auto; padding: 20px; border-radius: 10px; }
+    h1 { text-align: center; }
+    .input-group { margin: 10px 0; }
+    .result { background: #e0ffe0; padding: 10px; border-radius: 8px; margin-top: 20px; }
+    button { margin-top: 15px; padding: 10px; background-color: #0a9396; color: white; border: none; border-radius: 5px; }
+    button:hover { background-color: #007f80; }
+  </style>
+</head>
+<body>
+  <h1>🍼 Idade Corrigida para RN Prematuro</h1>
+  <div class="input-group">
+    <label>📆 Data de nascimento:</label><br />
+    <input type="date" id="nascimento" />
+  </div>
+  <div class="input-group">
+    <label>📅 Data da avaliação:</label><br />
+    <input type="date" id="avaliacao" />
+  </div>
+  <div class="input-group">
+    <label>🕰️ Idade gestacional ao nascer:</label><br />
+    <input type="number" id="semanas" min="20" max="40" value="32" /> semanas
+    <input type="number" id="dias" min="0" max="6" value="0" /> dias
+  </div>
+  <button onclick="calcular()">Calcular</button>
+  <button onclick="baixarPDF()">📥 Baixar PDF</button>
+  <div class="result" id="resultado"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    function calcular() {
+      const nascimento = new Date(document.getElementById("nascimento").value);
+      const avaliacao = new Date(document.getElementById("avaliacao").value);
+      const semanas = parseInt(document.getElementById("semanas").value);
+      const dias = parseInt(document.getElementById("dias").value);
+      if (avaliacao < nascimento || isNaN(nascimento) || isNaN(avaliacao)) {
+        document.getElementById("resultado").innerHTML = "⚠️ Datas inválidas.";
+        return;
+      }
+      const idade_gest_dias = semanas * 7 + dias;
+      const idade_crono_dias = Math.floor((avaliacao - nascimento) / (1000 * 60 * 60 * 24));
+      const semanas_termo = 40 * 7;
+      const idade_corrigida_dias = idade_crono_dias - (semanas_termo - idade_gest_dias);
+      const crono_sem = Math.floor(idade_crono_dias / 7);
+      const crono_dia = idade_crono_dias % 7;
+      const corri_sem = Math.max(0, Math.floor(idade_corrigida_dias / 7));
+      const corri_dia = Math.max(0, idade_corrigida_dias % 7);
+      window.dadosRelatorio = {
+        nascimento: nascimento.toLocaleDateString("pt-BR"),
+        avaliacao: avaliacao.toLocaleDateString("pt-BR"),
+        semanas, dias, crono_sem, crono_dia, corri_sem, corri_dia
+      };
+      document.getElementById("resultado").innerHTML =
+        `<p><strong>Idade Cronológica:</strong> ${crono_sem} semanas e ${crono_dia} dias</p>` +
+        `<p><strong>Idade Corrigida:</strong> ${corri_sem} semanas e ${corri_dia} dias</p>`;
+    }
+
+    async function baixarPDF() {
+      if (!window.dadosRelatorio) {
+        alert("Calcule antes de baixar o PDF.");
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("📋 Relatório de Idade Corrigida", 20, 20);
+      doc.setFontSize(12);
+      let y = 40;
+      const linhas = [
+        `Data de Nascimento: ${window.dadosRelatorio.nascimento}`,
+        `Data da Avaliação: ${window.dadosRelatorio.avaliacao}`,
+        "",
+        `Idade Gestacional ao nascer: ${window.dadosRelatorio.semanas} semanas e ${window.dadosRelatorio.dias} dias`,
+        `Idade Cronológica: ${window.dadosRelatorio.crono_sem} semanas e ${window.dadosRelatorio.crono_dia} dias`,
+        `Idade Corrigida: ${window.dadosRelatorio.corri_sem} semanas e ${window.dadosRelatorio.corri_dia} dias`
+      ];
+      linhas.forEach(linha => {
+        doc.text(linha, 20, y);
+        y += 10;
+      });
+      doc.save("idade_corrigida.pdf");
+    }
+  </script>
+</body>
+</html>
